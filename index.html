@@ -231,7 +231,7 @@
 
       if (navigator.share) {
         try {
-          await navigator.share({ title: 'Трезвый Олег — свадебный квест', text: shareText, url: shareUrl });
+          await navigator.share({ text: message });
           button.textContent = 'Результат отправлен ✓';
           return;
         } catch (error) {
