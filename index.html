@@ -224,7 +224,7 @@
     }
 
     async function shareResult(icon) {
-      const shareUrl = 'https://alekspt.github.io/quest/';
+      const shareUrl = `https://alekspt.github.io/quest/?result=${score}`;
       const shareText = `Я прошёл(ла) «Трезвого Олега» с ${score}% трезвости ${icon}\nСможешь остаться трезвее?`;
       const message = `${shareText}\n${shareUrl}`;
       const button = scene.querySelector('#share');
