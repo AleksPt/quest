@@ -90,11 +90,14 @@
     button { appearance: none; cursor: pointer; color: var(--ink); font: inherit; }
     .choice { min-height: 97px; padding: 15px 16px; border: 2px solid var(--ink); border-radius: 16px; background: white; text-align: left; font-size: 15px; font-weight: 800; line-height: 1.24; box-shadow: 4px 4px 0 var(--ink); transition: transform .14s, box-shadow .14s, background .14s; }
     .choice:hover { background: #fff8d8; transform: translate(2px, 2px); box-shadow: 2px 2px 0 var(--ink); }
+    .choice.selected { background: #d9f7e7; transform: translate(2px, 2px); box-shadow: 2px 2px 0 var(--ink); }
     .choice small { display: block; margin-top: 7px; color: #746c7b; font-size: 12px; font-weight: 650; }
-    .feedback { position: relative; z-index: 2; max-width: 690px; margin-top: 20px; padding: 13px 16px; border: 2px solid var(--ink); border-radius: 14px; background: #fff; font-size: 14px; font-weight: 750; transform: translateY(12px); opacity: 0; transition: .22s ease; }
-    .feedback.show { transform: none; opacity: 1; }
-    .next { position: relative; z-index: 2; display: none; margin-top: 14px; padding: 12px 19px; border: 2px solid var(--ink); border-radius: 12px; background: var(--pink); color: white; font-weight: 900; box-shadow: 4px 4px 0 var(--ink); }
+    .next { position: relative; z-index: 2; display: inline-block; margin-top: 14px; padding: 12px 19px; border: 2px solid var(--ink); border-radius: 12px; background: var(--pink); color: white; font-weight: 900; box-shadow: 4px 4px 0 var(--ink); }
     .next:hover { transform: translate(2px,2px); box-shadow: 2px 2px 0 var(--ink); }
+    .next:disabled { cursor: not-allowed; opacity: .52; }
+    .feedback-screen { position: relative; z-index: 3; display: grid; align-content: center; justify-items: start; min-height: 336px; max-width: 690px; }
+    .feedback-screen h2 { margin: 0 0 16px; font-size: clamp(30px, 4vw, 46px); line-height: 1; letter-spacing: -.055em; }
+    .result-feedback { margin: 0; padding: 16px; border: 2px solid var(--ink); border-radius: 15px; background: #fff; font-size: 16px; font-weight: 750; line-height: 1.4; box-shadow: 4px 4px 0 var(--ink); }
     .ending { position: relative; z-index: 3; display: grid; place-items: center; min-height: 336px; text-align: center; }
     .ending .big { font-size: 82px; filter: drop-shadow(3px 3px 0 var(--ink)); }
     .ending h2 { margin: 10px 0; }
@@ -175,7 +178,7 @@
       ]}
     ];
 
-    let round = 0, score = 100, locked = false;
+    let round = 0, score = 100, selectedChoice = null;
     const scene = document.getElementById('scene');
     const checklist = document.getElementById('checklist');
 
@@ -192,25 +195,35 @@
     function renderRound() {
       const item = rounds[round];
       const mobileMeterColor = score > 55 ? 'linear-gradient(90deg, #70dca5, #c9f19c)' : score > 28 ? 'linear-gradient(90deg, #f7bd4b, #ffde8a)' : 'linear-gradient(90deg, #ef587c, #ff9b9b)';
-      scene.innerHTML = `<span class="round">РАУНД ${round + 1} / ${rounds.length}</span><h2>${item.title}</h2><p class="description">${item.text}</p><div class="mobile-status"><div class="meter-label"><span>Трезвость</span><span data-score>${score}%</span></div><div class="meter"><div data-meter style="width: ${score}%; background: ${mobileMeterColor}"></div></div></div><div class="choices">${item.choices.map((choice, index) => `<button class="choice" data-choice="${index}">${choice.text}<small>${choice.note}</small></button>`).join('')}</div><div class="feedback" id="feedback"></div><button class="next" id="next">Дальше →</button>`;
-      scene.querySelectorAll('.choice').forEach(button => button.addEventListener('click', () => choose(Number(button.dataset.choice))));
-      scene.querySelector('#next').addEventListener('click', () => { round++; updateStatus(); round === rounds.length ? renderEnding() : renderRound(); });
+      selectedChoice = null;
+      scene.innerHTML = `<span class="round">РАУНД ${round + 1} / ${rounds.length}</span><h2>${item.title}</h2><p class="description">${item.text}</p><div class="mobile-status"><div class="meter-label"><span>Трезвость</span><span data-score>${score}%</span></div><div class="meter"><div data-meter style="width: ${score}%; background: ${mobileMeterColor}"></div></div></div><div class="choices">${item.choices.map((choice, index) => `<button class="choice" data-choice="${index}">${choice.text}<small>${choice.note}</small></button>`).join('')}</div><button class="next" id="next" disabled>Далее →</button>`;
+      scene.querySelectorAll('.choice').forEach(button => button.addEventListener('click', () => selectChoice(Number(button.dataset.choice))));
+      scene.querySelector('#next').addEventListener('click', confirmChoice);
     }
 
-    function choose(index) {
-      if (locked) return;
-      locked = true;
-      const choice = rounds[round].choices[index];
+    function selectChoice(index) {
+      selectedChoice = index;
+      scene.querySelectorAll('.choice').forEach(button => button.classList.toggle('selected', Number(button.dataset.choice) === index));
+      scene.querySelector('#next').disabled = false;
+    }
+
+    function confirmChoice() {
+      if (selectedChoice === null) return;
+      const choice = rounds[round].choices[selectedChoice];
       score = Math.max(0, Math.min(100, score + choice.change));
       updateStatus();
-      const feedback = scene.querySelector('#feedback');
-      feedback.textContent = choice.feedback;
-      feedback.classList.add('show');
-      scene.querySelectorAll('.choice').forEach(btn => btn.disabled = true);
-      const next = scene.querySelector('#next');
-      next.style.display = 'inline-block';
-      next.textContent = round === rounds.length - 1 ? 'Узнать итог →' : 'Следующий раунд →';
-      locked = false;
+      renderFeedback(choice);
+    }
+
+    function renderFeedback(choice) {
+      const isLastRound = round === rounds.length - 1;
+      const mobileMeterColor = score > 55 ? 'linear-gradient(90deg, #70dca5, #c9f19c)' : score > 28 ? 'linear-gradient(90deg, #f7bd4b, #ffde8a)' : 'linear-gradient(90deg, #ef587c, #ff9b9b)';
+      scene.innerHTML = `<div class="feedback-screen"><span class="round">${isLastRound ? 'ПОСЛЕДНИЙ ВЫБОР' : `РАУНД ${round + 1} ПРОЙДЕН`}</span><h2>Что произошло</h2><p class="result-feedback">${choice.feedback}</p><div class="mobile-status"><div class="meter-label"><span>Трезвость</span><span data-score>${score}%</span></div><div class="meter"><div data-meter style="width: ${score}%; background: ${mobileMeterColor}"></div></div></div><button class="next" id="next">${isLastRound ? 'Узнать итог →' : 'Следующий раунд →'}</button></div>`;
+      scene.querySelector('#next').addEventListener('click', () => {
+        round++;
+        updateStatus();
+        round === rounds.length ? renderEnding() : renderRound();
+      });
     }
 
     function renderEnding() {
