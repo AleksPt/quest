@@ -99,7 +99,9 @@
     .ending .big { font-size: 82px; filter: drop-shadow(3px 3px 0 var(--ink)); }
     .ending h2 { margin: 10px 0; }
     .ending p { max-width: 600px; margin: 0; font-weight: 650; line-height: 1.45; }
-    .restart { margin-top: 22px; padding: 12px 20px; border: 2px solid var(--ink); border-radius: 12px; background: var(--mint); font-weight: 900; box-shadow: 4px 4px 0 var(--ink); }
+    .restart, .share { padding: 12px 20px; border: 2px solid var(--ink); border-radius: 12px; font-weight: 900; box-shadow: 4px 4px 0 var(--ink); }
+    .restart { margin-top: 22px; background: var(--mint); }
+    .share { display: block; margin: 14px auto 0; background: var(--violet); color: white; }
     .footer { margin: 22px 0 0; color: #61566b; text-align: center; font-size: 12px; font-weight: 650; }
 
     @media (max-width: 780px) { .hero, .game { grid-template-columns: 1fr; } .oleg-card { min-height: 215px; } .oleg { font-size: 119px; right: 26px; } .oleg-speech { width: 61%; } .panel { display: none; } .mobile-status { display: block; position: relative; z-index: 2; margin: 0 0 15px; padding: 13px 15px; border: 2px solid var(--ink); border-radius: 15px; background: #fff; box-shadow: 3px 3px 0 var(--ink); } .mobile-status .meter-label { margin-bottom: 7px; } }
@@ -216,8 +218,41 @@
       if (score >= 80) { icon = '🏆'; title = 'Легенда трезвого танцпола!'; text = `Олег завершил свадьбу с ${score}% трезвости, отличным настроением и фотографиями, за которые завтра не будет неловко. Молодые довольны, Олег — тоже.`; }
       else if (score >= 45) { icon = '🛡️'; title = 'Олег удержал оборону!'; text = `Финиш с ${score}% трезвости. Пара тостов потрепала нервы, но Олег выбрал себя и всё равно от души отпраздновал.`; }
       else{ icon = '😅'; title = 'Почти, но ещё Олег'; text = `Финал с ${score}% трезвости. Олег уже немного устал от тостов, зато всё ещё помнит пароль от телефона, дорогу домой и имя жениха.`; }
-      scene.innerHTML = `<div class="ending"><div><div class="big">${icon}</div><span class="round">ФИНИШ</span><h2>${title}</h2><p>${text}</p><button class="restart" id="restart">Пройти ещё раз ↻</button></div></div>`;
+      scene.innerHTML = `<div class="ending"><div><div class="big">${icon}</div><span class="round">ФИНИШ</span><h2>${title}</h2><p>${text}</p><button class="restart" id="restart">Пройти ещё раз ↻</button><button class="share" id="share" type="button">Поделиться результатом ↗</button></div></div>`;
       scene.querySelector('#restart').addEventListener('click', () => { round = 0; score = 100; updateStatus(); renderRound(); });
+      scene.querySelector('#share').addEventListener('click', () => shareResult(icon));
+    }
+
+    async function shareResult(icon) {
+      const shareUrl = 'https://alekspt.github.io/quest/';
+      const shareText = `Я прошёл(ла) «Трезвого Олега» с ${score}% трезвости ${icon}\nСможешь остаться трезвее?`;
+      const message = `${shareText}\n${shareUrl}`;
+      const button = scene.querySelector('#share');
+
+      if (navigator.share) {
+        try {
+          await navigator.share({ title: 'Трезвый Олег — свадебный квест', text: shareText, url: shareUrl });
+          button.textContent = 'Результат отправлен ✓';
+          return;
+        } catch (error) {
+          if (error.name === 'AbortError') return;
+        }
+      }
+
+      try {
+        await navigator.clipboard.writeText(message);
+      } catch (error) {
+        const textarea = document.createElement('textarea');
+        textarea.value = message;
+        textarea.style.position = 'fixed';
+        textarea.style.opacity = '0';
+        document.body.append(textarea);
+        textarea.select();
+        document.execCommand('copy');
+        textarea.remove();
+      }
+
+      button.textContent = 'Результат скопирован ✓';
     }
     updateStatus(); renderRound();
   </script>
