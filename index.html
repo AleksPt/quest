@@ -215,7 +215,7 @@
       let icon, title, text;
       if (score >= 80) { icon = '🏆'; title = 'Легенда трезвого танцпола!'; text = `Олег завершил свадьбу с ${score}% трезвости, отличным настроением и фотографиями, за которые завтра не будет неловко. Молодые довольны, Олег — тоже.`; }
       else if (score >= 45) { icon = '🛡️'; title = 'Олег удержал оборону!'; text = `Финиш с ${score}% трезвости. Пара тостов потрепала нервы, но Олег выбрал себя и всё равно от души отпраздновал.`; }
-      else { icon = '😅'; title = 'Почти, но ещё Олег'; text = `Финал с ${score}% трезвости. Олег уже немного устал от тостов, зато всё ещё помнит пароль от телефона, дорогу домой и имя жениха.`; }
+      else{ icon = '😅'; title = 'Почти, но ещё Олег'; text = `Финал с ${score}% трезвости. Олег уже немного устал от тостов, зато всё ещё помнит пароль от телефона, дорогу домой и имя жениха.`; }
       scene.innerHTML = `<div class="ending"><div><div class="big">${icon}</div><span class="round">ФИНИШ</span><h2>${title}</h2><p>${text}</p><button class="restart" id="restart">Пройти ещё раз ↻</button></div></div>`;
       scene.querySelector('#restart').addEventListener('click', () => { round = 0; score = 100; updateStatus(); renderRound(); });
     }
